@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Permis — Flashcards</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Permis — Flashcards</h1>
+  <p>Voiture &middot; Vérifications &middot; Sécurité &middot; Secours &middot; Points faibles</p>
+</header>
+<div class="statsbar">
+  <div><span class="snum" id="stot">0</span>&nbsp;cartes</div>
+  <div><span class="snum g" id="sok">0</span>&nbsp;sues</div>
+  <div><span class="snum u" id="sunsure">0</span>&nbsp;incertain</div>
+  <div><span class="snum r" id="snok">0</span>&nbsp;à revoir</div>
+  <div id="pbar-wrap"><div id="pbar"></div></div>
+</div>
+<div id="gamebar" class="gamebar"></div>
+<div class="modebar">
+  <span class="modebar-label">Mode :</span>
+  <button class="modetab on" id="tab-flip" onclick="setMode('flip')">Lecture</button>
+  <button class="modetab" id="tab-write" onclick="setMode('write')">Écriture</button>
+  <button class="modetab" id="tab-chrono" onclick="setMode('chrono')">Chrono</button>
+  <button class="modetab" id="tab-hearts" onclick="setMode('hearts')">Cœurs</button>
+  <button class="modetab" id="sound-btn" onclick="toggleSound()" style="margin-left:auto">Son ON</button>
+</div>
+<div class="filters">
+  <span class="flabel">Filtrer :</span>
+  <button class="fbtn on" data-f="all" onclick="filt('all')">Toutes</button>
+  <button class="fbtn k-score" data-f="k" onclick="filt('k')">Sues</button>
+  <button class="fbtn u-score" data-f="u" onclick="filt('u')">Incertains</button>
+  <button class="fbtn n-score" data-f="n" onclick="filt('n')">À revoir</button>
+  <button class="fbtn voiture" data-f="voiture" onclick="filt('voiture')">Voiture</button>
+  <button class="fbtn ve" data-f="ve" onclick="filt('ve')">VE</button>
+  <button class="fbtn qser" data-f="qser" onclick="filt('qser')">Sécurité</button>
+  <button class="fbtn sec" data-f="sec" onclick="filt('sec')">Secours</button>
+  <button class="fbtn pf" data-f="pf" onclick="filt('pf')">Points faibles</button>
+  <div class="gap"></div>
+  <button class="abtn" onclick="shuffle()">Mélanger</button>
+  <button class="abtn" onclick="exportProgress()">Exporter</button>
+  <button class="abtn" onclick="document.getElementById('import-file').click()">Importer</button>
+  <input type="file" id="import-file" accept="application/json,.json" style="display:none" onchange="importProgress(event)">
+  <button class="abtn del" onclick="confirmReset()">Réinit.</button>
+</div>
+<div class="leg">
+  <span><i class="dot voiture"></i>Voiture / Commandes</span>
+  <span><i class="dot ve"></i>Vérif. extérieures</span>
+  <span><i class="dot qser"></i>Sécurité routière</span>
+  <span><i class="dot sec"></i>Premiers secours</span>
+  <span><i class="dot pf"></i>Points faibles</span>
+</div>
+<main>
+  <div class="cnum" id="cnum">Carte 1 / 1</div>
+  <div class="scene" id="scene" onclick="flipCard()">
+    <div class="inner" id="inner">
+      <div class="face front">
+        <div class="tag" id="ftag"></div>
+        <div class="body" id="fbody"><p class="qtxt" id="qtext"></p></div>
+        <div class="hint">Cliquer pour voir où + comment faire &middot; Espace / F</div>
+      </div>
+      <div class="face back">
+        <div class="tag ans">Emplacement &amp; Procédure</div>
+        <div class="body"><div class="atxt" id="atext"></div></div>
+        <div class="hint">1 = je sais &middot; 2 = incertain &middot; 3 = à revoir</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav" id="flip-nav">
+    <button class="nbtn" id="bprev" onclick="prev()" disabled>&#8592;</button>
+    <button class="nbtn primary" id="bnext" onclick="next()">Suivante &#8594;</button>
+  </div>
+  <div class="score" id="score">
+    <button class="sbtn k" onclick="mark('k')">Je sais</button>
+    <button class="sbtn u" onclick="mark('u')">Incertain</button>
+    <button class="sbtn n" onclick="mark('n')">A revoir</button>
+  </div>
+  <div id="write-area">
+    <div class="write-question" id="w-question">
+      <div class="write-qtag" id="w-tag"></div>
+      <div class="write-qtext" id="w-qtext"></div>
+    </div>
+    <div class="write-input-area">
+      <label>Ta réponse — où c'est, comment faire :</label>
+      <textarea class="write-textarea" id="w-input" placeholder="Décris l'emplacement, les gestes, le pourquoi..."></textarea>
+      <div class="write-actions">
+        <button class="wbtn reveal" onclick="revealAnswer()">Voir la réponse</button>
+        <button class="wbtn skip" onclick="next()">Passer</button>
+      </div>
+    </div>
+    <div class="write-answer" id="w-answer">
+      <div class="write-answer-label">Réponse correcte</div>
+      <div class="write-answer-text" id="w-atext"></div>
+      <div class="write-selfmark" id="w-selfmark">
+        <div class="write-selfmark-label">Tu t'étais bien évalué ?</div>
+        <button class="sbtn k" onclick="mark('k')">Oui, je savais</button>
+        <button class="sbtn u" onclick="mark('u')">À moitié</button>
+        <button class="sbtn n" onclick="mark('n')">Non, à retravailler</button>
+      </div>
+    </div>
+  </div>
+  <div class="nav" id="write-nav" style="display:none">
+    <button class="nbtn" id="w-bprev" onclick="prev()" disabled>&#8592;</button>
+    <button class="nbtn primary" id="w-bnext" onclick="next()">Suivante &#8594;</button>
+  </div>
+  <div class="empty-msg" id="empty-msg" style="display:none">Aucune carte « à revoir » pour l'instant. Marque des cartes en « incertain » ou « à revoir » pour les retrouver ici.</div>
+</main>
+<div id="data" style="display:none">
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Sécurité enfant — emplacement et activation"><template>Sur la tranche intérieure de chaque portière arrière. Faire glisser le levier (sans clé sur Clio 5) sur les deux portières. L&#x27;enfant ne peut plus ouvrir de l&#x27;intérieur ; ouverture possible de l&#x27;extérieur.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Niveau du liquide de frein — contrôle"><template>Sous le capot, bocal à symbole maître-cylindre, repères MIN/MAX. Vérifier que le niveau est entre les deux, moteur froid. Niveau bas = perte d&#x27;efficacité du freinage.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Ouverture et fermeture du capot"><template>Poignée sous le tableau de bord côté conducteur, puis levier de sécurité (jaune sur Clio 5) à l&#x27;extérieur. Soulever, maintenir avec la tige. Fermer : abaisser et appuyer jusqu&#x27;au clic. La sécurité empêche l&#x27;ouverture en roulant.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Faites fonctionner les essuie-glaces avant sur la position la plus rapide."><template>Commodo droit. Contact mis, descendre le commodo au maximum (position basse = plus rapide).</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Vérifiez la présence du gilet de haute visibilité."><template>Dans l&#x27;habitacle, accessible depuis le siège. Indiquer l&#x27;emplacement (pas besoin de le sortir). À mettre avant de sortir en cas de panne ou accident.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Vérifiez la présence du certificat d&#x27;immatriculation (carte grise)."><template>Dans la boîte à gants. Photocopie acceptée. En contrôle : à présenter avec le permis.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez l&#x27;indicateur du niveau de carburant."><template>Au tableau de bord, combiné d&#x27;instruments. La flèche près de l&#x27;icône pompe indique le côté de la trappe.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Actionnez le dégivrage de la lunette arrière et montrez le voyant."><template>Bouton console centrale (lunette avec lignes ondulées). Démarrer la voiture d&#x27;abord. Le repère lumineux s&#x27;allume sur le bouton.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez le voyant de pression d&#x27;huile insuffisante."><template>Voyant rouge (bidon d&#x27;huile / lampe d&#x27;Aladin), tableau de bord côté droit. Mettre le contact pour le voir. Pression insuffisante = risque de casse moteur.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Vérifiez la présence de l&#x27;éthylotest."><template>Dans l&#x27;habitacle, près du conducteur. Si absent : indiquer qu&#x27;il n&#x27;est plus obligatoire à bord.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez la commande de réglage du volant."><template>Levier sous la colonne de direction. Si action demandée : abaisser le levier, régler hauteur/profondeur, reverrouiller. Bon réglage = visibilité, accès aux commandes, efficacité des airbags.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Positionnez la commande pour diriger l&#x27;air vers le pare-brise."><template>Molette de distribution d&#x27;air, position pare-brise (flèches vers le haut). Sert à désembuer rapidement.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez le voyant de défaut de batterie."><template>Voyant rouge (batterie +/−), tableau de bord côté droit, sous le voyant d&#x27;huile. S&#x27;il reste allumé en roulant, le véhicule finit par s&#x27;arrêter.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez le voyant de température trop élevée du liquide de refroidissement."><template>Voyant rouge (thermomètre dans l&#x27;eau), côté droit. Si rouge en roulant : arrêt immédiat. Ne jamais ouvrir le bouchon moteur chaud. Surchauffe = casse moteur.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez le voyant de mauvaise fermeture d&#x27;une portière."><template>Tableau de bord en haut à gauche (voiture avec portière ouverte). Démarrer la voiture ET entrouvrir une portière pour le faire apparaître.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez la commande du régulateur de vitesse."><template>Commodo droit, commande du bas (le limiteur est au-dessus). Maintient une vitesse constante. Se désactive en touchant frein ou embrayage.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Sans l&#x27;actionner, montrez la commande de l&#x27;avertisseur sonore."><template>Au centre du volant. En agglomération : utilisable seulement en cas de danger immédiat.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez la commande de désactivation de l&#x27;airbag passager avant."><template>Dans la tranche de la portière passager (ouvrir la portière). Tourner sur OFF : voyant jaune au tableau de bord. Obligatoire si siège enfant dos à la route à l&#x27;avant.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez le voyant d&#x27;absence de ceinture du conducteur."><template>Tableau de bord en haut à gauche (silhouette rouge avec ceinture). Mettre le contact sans boucler pour l&#x27;allumer.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Vérifiez la présence de l&#x27;attestation d&#x27;assurance et de la vignette."><template>Dans la boîte à gants. La vignette pare-brise n&#x27;est plus obligatoire (dématérialisation). Être assuré reste obligatoire ; en contrôle, permis + carte grise suffisent.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Allumez les feux de brouillard arrière et montrez le voyant."><template>Bague arrière du commodo gauche. Démarrer, allumer les feux de croisement, puis tourner la bague. Voyant orange. Brouillard ou neige seulement, interdit sous forte pluie.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez comment régler la hauteur de l&#x27;appui-tête conducteur."><template>En haut du dossier. Appuyer sur le bouton latéral et monter/descendre. Le milieu de l&#x27;appui-tête au niveau des yeux. Protège des cervicales en cas de choc arrière.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="De quelle couleur est le voyant de feu de brouillard arrière allumé ?"><template>Orange. Orange = à surveiller, on peut rouler ; rouge = danger, s&#x27;arrêter dès que possible.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez la commande de recyclage de l&#x27;air."><template>Bouton au milieu de la console d&#x27;aération (flèche bouclée). Maintenu trop longtemps : buée et mauvaise visibilité.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Allumez les feux de route et montrez le voyant."><template>Commodo gauche. Démarrer, allumer les feux de croisement, pousser le commodo vers l&#x27;avant. Voyant bleu. Routes non éclairées seulement, éteindre lors d&#x27;un croisement.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Vérifiez la présence du constat amiable."><template>Boîte à gants (ou appli e-constat). En cas d&#x27;accident : à transmettre à l&#x27;assureur sous 5 jours.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="De quelle couleur est le voyant de défaillance du système de freinage ?"><template>Rouge. Causes : frein à main mal desserré, niveau de liquide de frein bas, défaillance du circuit.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez la commande du limiteur de vitesse."><template>Commodo droit, commande du haut (le régulateur est en dessous). Empêche de dépasser la vitesse programmée même pied au plancher.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Faites fonctionner l&#x27;essuie-glace arrière."><template>Commodo droit, tourner la bague vers le haut d&#x27;un cran. Pas de réglage de vitesse. Certains véhicules n&#x27;en ont pas : le signaler.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Indiquez où se situent les attaches Isofix."><template>Banquette arrière, petits clapets entre les coussins (deux points par place). Le siège compatible se clipse dessus. Tous les sièges ne sont pas compatibles.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Montrez le voyant de baisse de pression d&#x27;un pneu."><template>Pneu dégonflé avec point d&#x27;exclamation, voyant orange côté gauche. Sous-gonflage = aquaplanage, usure, mauvaise tenue. Vérifier chaque mois et avant long trajet.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment diriger l'air vers le pare-brise ?"><template>Commande d'aération côté gauche du tableau de bord, sur la position pare-brise.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est le bouton de dégivrage de la lunette arrière ?"><template>Console centrale, bouton avec symbole lunette et lignes ondulées.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est le recyclage d'air et pourquoi ne pas le laisser actif trop longtemps ?"><template>Bouton au milieu de la console d'aération. Trop longtemps = buée à l'intérieur, mauvaise visibilité.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où sont la ventilation, le chaud/froid et la clim ?"><template>Ventilation : molette gauche. Chaud/froid : molette droite. Clim : bouton central.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où sont les documents obligatoires et le gilet ?"><template>Dans la boîte à gants : éthylotest, carte grise, assurance, constat, gilet.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est le triangle de pré-signalisation ?"><template>Dans le coffre, dans son emballage. La roue de secours est sous le tapis du coffre.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment passer le rétroviseur intérieur en position nuit ?"><template>Languette sous le rétroviseur, à basculer. Si système automatique : le signaler.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où sont régulateur et limiteur, et quelle différence ?"><template>Commodo droit. Régulateur : maintient une vitesse. Limiteur : empêche de la dépasser.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est le réglage de hauteur des feux et quand s'en servir ?"><template>Bouton à gauche du tableau de bord. À utiliser coffre chargé : les phares pointent haut et éblouissent, il faut les rabaisser.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où règle-t-on les rétroviseurs extérieurs ?"><template>Côté gauche du tableau de bord : sélecteur gauche/droite puis joystick.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment allumer les feux de position ?"><template>Tourner le commodo d'un cran depuis AUTO. Voyant au tableau de bord.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment allumer les feux de croisement ?"><template>Tourner le commodo de deux crans depuis AUTO. Témoin vert.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment allumer les feux de route et quel voyant ?"><template>Pousser le commodo vers l'avant. Témoin bleu. Routes non éclairées seulement, éteindre au croisement.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment allumer les feux de brouillard arrière et quel prérequis ?"><template>Être en feux de croisement d'abord, puis tourner la bague arrière du commodo. Voyant orange. Pas de feu de brouillard avant sur cette Clio.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment allumer les feux de détresse ?"><template>Bouton triangle rouge sur la console centrale. Panne, accident, ralentissement ou danger.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est la commande des essuie-glaces avant et comment aller au plus rapide ?"><template>Commodo droit, descendre pour activer. Plus on descend, plus c'est rapide (position basse = max).</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment actionner l'essuie-glace arrière ?"><template>Commodo droit, tourner d'un cran vers l'avant ; encore pour le mode continu.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment faire un coup unique de lave-glace avant ?"><template>Pousser le commodo essuie-glaces vers le haut : un aller-retour avec liquide.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment sont organisés les voyants au tableau de bord ?"><template>Rouges à droite (alertes critiques), jaunes/orange à gauche (avertissements).</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : quels sont les 4 voyants rouges critiques ?"><template>Pression d'huile, défaillance freinage (point d'exclamation), batterie, température liquide de refroidissement.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : quels sont les voyants jaunes/orange ?"><template>Pression pneus (TPMS), carburant ; côté droit : défaut moteur (normal au démarrage), ceinture.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment montrer le voyant de portière mal fermée ?"><template>Entrouvrir une portière : le voyant (voiture portière ouverte) s'allume. Refermer ensuite.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est la sécurité enfant et comment l'activer ?"><template>Sur la tranche de la portière arrière. Sans clé sur Clio 5 : glisser le levier à la main. Ouverture possible de l'extérieur.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est le système Isofix ?"><template>Banquette arrière, deux ancrages entre les coussins. Siège compatible seulement.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est la désactivation de l'airbag passager et comment l'utiliser ?"><template>Côté passager (visible portière ouverte) ou trappe à clé. OFF pour siège enfant dos à la route, ON pour réactiver.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment ouvrir le capot (habitacle puis extérieur) ?"><template>Poignée sous le tableau de bord côté conducteur, puis levier jaune à l'extérieur. Soulever et maintenir avec la tige.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est le liquide de refroidissement ?"><template>Premier bocal côté moteur, niveau entre MIN et MAX. Manque = surchauffe, casse moteur.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est le liquide lave-glace ?"><template>Bocal dédié, symbole pare-brise. Manque = pare-brise non nettoyé, mauvaise visibilité.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment contrôler le niveau d'huile moteur ?"><template>Jauge à anneau jaune, repères MIN/MAX au bout. Moteur froid, terrain plat. Manque = casse moteur.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est le liquide de frein ?"><template>Bocal à symbole maître-cylindre, niveau entre MIN et MAX. Manque = défaillance du freinage.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où est la batterie ?"><template>Sous le capot, borne + visible (et −). Dépannage : + sur +, − sur −.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : où trouver les pressions des pneus et quelles valeurs ?"><template>Sur le montant de portière conducteur. Clio 5 : 2,3 bars avant, 2,1 arrière. Vérifier chaque mois ou avant long trajet.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment repérer le témoin d'usure d'un pneu ?"><template>Marquage TWI sur le flanc, suivre vers la bande de roulement. Si la gomme affleure le témoin, pneu usé.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : qu'est-ce que les feux diurnes (DRL) et comment s'activent-ils ?"><template>Bandes LED avant, allumées automatiquement au démarrage. Pas de bouton. Rendent le véhicule visible le jour.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment vérifier les feux de stop et pourquoi de l'aide ?"><template>Demander à quelqu'un d'appuyer sur le frein pendant qu'on vérifie les 3 feux à l'arrière. Impossible seul.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : combien de feux de détresse et où ?"><template>6 en tout : 2 avant, 2 sur les rétroviseurs, 2 arrière.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : y a-t-il un feu de brouillard avant ?"><template>Non. Seulement un feu de brouillard arrière.</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment accéder aux LEDs arrière ?"><template>À l'arrière, enlever le cache plastique (écrous) pour accéder aux blocs optiques (LEDs).</template></div>
+<div class="cd" data-c="voiture" data-l="Voiture / Commandes" data-q="Clio 5 : comment montrer l'emplacement des ampoules avant ?"><template>Ouvrir le capot, montrer derrière le bloc optique avant (LEDs intégrées).</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Niveau du liquide lave-glace"><template>Sous le capot, bocal à symbole jet d'eau. Vérifier le niveau ; liquide spécial hiver par temps de gel. Sinon pare-brise non nettoyé = mauvaise visibilité.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="État du flanc d'un pneumatique"><template>Paroi latérale du pneu. Chercher coupures, boursouflures, hernies. Un flanc abîmé peut éclater en roulant.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Plaques d'immatriculation — état et propreté"><template>Avant et arrière : propres, lisibles, bien fixées. Avec porte-vélo : plaque et feux doivent rester visibles.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Clignotants côté trottoir — état et fonctionnement"><template>Côté droit (avant, arrière, rétroviseur). Activer et vérifier qu'ils clignotent, propres et intacts. Clignotement rapide = ampoule grillée.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Feux de brouillard arrière — état et fonctionnement"><template>Clio 5 : un seul, côté gauche. Feux de croisement puis brouillard arrière (commodo gauche). Vérifier allumé, propre, intact. Brouillard/neige seulement.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Feux de détresse — état et fonctionnement"><template>Clio 5 : 6 feux (2 avant, 2 rétros, 2 arrière). Activer (triangle rouge) et vérifier que les 6 clignotent.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Feux de route — état et fonctionnement"><template>Projecteurs avant. Pousser le commodo gauche vers l'avant. Vérifier allumés, propres, intacts. À éteindre au croisement.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Feux de croisement — état et fonctionnement"><template>Projecteurs avant. Commodo gauche, deux crans depuis AUTO. Vérifier allumés, propres, intacts. En panne : mauvaise visibilité, confondu avec un deux-roues.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Feux de position — état et fonctionnement"><template>Avant et arrière. Commodo un cran. Visibles à 150 m par temps clair. Panne arrière = risque de collision.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Feux diurnes (DRL) — état et fonctionnement"><template>Bandes LED avant, automatiques au démarrage. Vérifier propres et fonctionnels. Rendent visible le jour.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Feux de stop — état et fonctionnement"><template>Trois feux arrière. Demander à quelqu'un d'appuyer sur le frein, vérifier les 3. Impossible seul. Panne = risque de collision arrière.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Feux de recul — état et fonctionnement"><template>Feux blancs arrière. Avec aide, passer en marche arrière et vérifier. Éclairent la zone et avertissent du recul.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Éclairage de la plaque arrière"><template>Petit éclairage blanc sur la plaque arrière. Allumer les feux de position, vérifier qu'elle est éclairée. Défaut au contrôle technique = contre-visite.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Dispositifs réfléchissants — état et propreté"><template>Réflecteurs rouges arrière. Vérifier propres et intacts. Rendent le véhicule visible de nuit.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Balais d'essuie-glace — état"><template>Pare-brise avant et lunette arrière. Inspecter le caoutchouc : pas de déchirure ni dureté. Défectueux = traces, mauvaise visibilité.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Niveau du liquide de refroidissement"><template>Premier bocal côté moteur, repères MIN/MAX. Ne jamais ouvrir moteur chaud (brûlure). Manque = surchauffe, casse moteur.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Niveau d'huile moteur — contrôle"><template>Jauge (anneau jaune) : essuyer, remettre, lire entre MIN et MAX. Moteur froid, à plat. Manque = casse moteur.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Batterie — emplacement"><template>Sous le capot, bornes + et −. Dépannage : brancher en parallèle, + sur +, − sur −.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Témoin d'usure de la bande de roulement"><template>Marquage TWI sur le flanc, suivre vers la bande. Si la gomme affleure le témoin, pneu à changer. Limite légale : 1,6 mm.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Pression préconisée des pneumatiques"><template>Indiquée sur le montant de portière conducteur. Clio 5 : 2,3 bars avant, 2,1 arrière. À vérifier chaque mois et avant long trajet.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Trappe à carburant et bouchon"><template>Sur un côté du véhicule. Ouvrir, vérifier que le bouchon est bien vissé et la trappe refermée. Mal fermé = fuite de carburant ou vapeurs.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Gicleurs de lave-glace avant"><template>Sur le capot, orientés vers le pare-brise. Vérifier que les jets l'atteignent bien. Bouchés = pare-brise non nettoyé.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Triangle de pré-signalisation — emplacement"><template>Dans le coffre. Hors autoroute : placer à 30 m en arrière (ou avant virage/sommet de côte). Sur autoroute : ne pas l'utiliser.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Ouverture et fermeture du coffre"><template>Hayon arrière. Vérifier la bonne fermeture (clic). Pas d'objets sur la plage arrière (projectiles en freinage).</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Remplacement d'ampoule à l'avant"><template>Derrière le bloc optique avant, capot ouvert (LEDs sur Clio 5). Montrer l'accès. Feu de croisement en panne = mauvaise visibilité, confondu avec un deux-roues.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Remplacement d'ampoule à l'arrière"><template>Bloc optique arrière, enlever le cache (écrous). LEDs intégrées. Feu arrière en panne = risque de collision.</template></div>
+<div class="cd" data-c="ve" data-l="Vérification Extérieure" data-q="Ouverture du capot — procédure complète"><template>Habitacle : poignée sous le tableau de bord. Extérieur : levier de sécurité jaune, soulever, maintenir avec la tige. Fermer : abaisser et appuyer jusqu'au double clic.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Pourquoi régler la hauteur des feux ?"><template>Pour ne pas éblouir les autres usagers.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Intérêt de la position nuit du rétroviseur ?"><template>Ne pas être ébloui par les feux du véhicule suiveur.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Conséquence d'une panne de dégivrage de la lunette arrière ?"><template>Insuffisance ou absence de visibilité vers l'arrière.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Comment détecter l'usure des essuie-glaces en circulation ?"><template>Sous la pluie, quand ils laissent des traces sur le pare-brise.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Précautions lors du remplissage du réservoir ?"><template>Arrêter le moteur, ne pas fumer, ne pas téléphoner.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Conditions pour contrôler le niveau d'huile ?"><template>Moteur froid, terrain plat.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Qu'est-ce qui décharge la batterie, moteur éteint ?"><template>Les feux ou accessoires électriques restés en marche.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Risque de rouler avec un frein de parking mal desserré ?"><template>Une dégradation du système de freinage.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Conséquence d'une température trop élevée du liquide de refroidissement ?"><template>Surchauffe ou casse moteur.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Comment empêcher les enfants à l'arrière d'ouvrir leur portière ?"><template>Actionner la sécurité enfant sur les deux portières arrière.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Peut-on utiliser les feux de brouillard arrière par forte pluie ?"><template>Non.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Dans quels cas utilise-t-on les feux de brouillard ?"><template>Par temps de brouillard et de neige.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Risque de garder les feux de route lors d'un croisement ?"><template>Éblouir les autres usagers.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Différence entre un voyant orange et un voyant rouge ?"><template>Rouge : anomalie ou danger. Orange : élément important à surveiller.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="À partir de quel âge un enfant peut-il être à l'avant ?"><template>10 ans.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Comment désactiver rapidement le régulateur sans sa commande ?"><template>En appuyant sur le frein ou l'embrayage.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Quand désactiver l'airbag passager avant ?"><template>Pour un enfant à l'avant dans un siège auto dos à la route.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Utilité d'un limiteur de vitesse ?"><template>Ne pas dépasser la vitesse programmée par le conducteur.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Quand utiliser les feux de détresse ?"><template>En cas de panne, d'accident ou de ralentissement important.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Pourquoi bien régler son volant ? (deux exemples)"><template>Confort, accès aux commandes, visibilité du tableau de bord, efficacité des airbags.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Deux éléments pour un désembuage efficace ?"><template>Vitesse de ventilation, air chaud, climatisation.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Risque de garder le recyclage de l'air trop longtemps ?"><template>Mauvaise visibilité par apparition de buée.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Visibilité arrière par temps de pluie : quelle commande en plus de l'essuie-glace ?"><template>Le désembuage arrière.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Autre accessoire de sécurité obligatoire en cas de panne ?"><template>Le triangle de pré-signalisation.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Deux autres documents obligatoires (avec la carte grise) ?"><template>L'attestation d'assurance et le permis de conduire.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Deux autres documents obligatoires (avec l'assurance) ?"><template>Le certificat d'immatriculation et le permis de conduire.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Taux d'alcoolémie en infraction en permis probatoire ?"><template>0,2 g/l, soit 0 verre (dès le 1er verre le seuil peut être dépassé).</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Délai pour transmettre le constat amiable à l'assureur ?"><template>5 jours.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Utilité de l'appui-tête ?"><template>Retenir la tête en cas de choc et limiter les blessures.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Quand utiliser l'avertisseur sonore en agglomération ?"><template>En cas de danger immédiat.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Fréquence de vérification de la pression des pneus ?"><template>Tous les mois.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Peut-on fixer tous les sièges enfant en Isofix ?"><template>Non, seulement ceux compatibles.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Sécurité enfant enclenchée : peut-on ouvrir la portière de l'extérieur ?"><template>Oui.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Conséquence d'un niveau insuffisant de liquide de frein ?"><template>Perte d'efficacité du freinage.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Risque d'une mauvaise fermeture du capot en roulant ?"><template>Ouverture du capot pouvant causer un accident.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Utilité du dispositif de sécurité du capot ?"><template>Empêcher l'ouverture en circulation en cas de mauvais verrouillage.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Pourquoi un lave-glace spécial hiver ?"><template>Pour éviter le gel du liquide.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Risque principal d'une absence de liquide lave-glace ?"><template>Mauvaise visibilité.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Où trouver les pressions préconisées des pneus ?"><template>Plaque sur une portière, notice du véhicule, ou trappe à carburant.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Précautions en cas d'installation d'un porte-vélo ?"><template>Plaque et feux doivent rester visibles.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Signification d'un clignotement plus rapide ?"><template>Une ampoule ne fonctionne plus.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Un cas d'utilisation de l'appel lumineux ?"><template>Avertir de son approche, en cas de danger, ou à la place du klaxon.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Conséquences d'un mauvais réglage des feux de croisement ?"><template>Mauvaise vision vers l'avant et éblouissement des autres usagers.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Conséquences d'une panne de feu de croisement ?"><template>Mauvaise visibilité et risque d'être confondu avec un deux-roues.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="À quelle distance les feux de position sont-ils visibles par temps clair ?"><template>150 mètres.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Utilité des feux diurnes ?"><template>Rendre le véhicule plus visible le jour.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Conséquence d'une panne des feux de stop ?"><template>Manque d'information pour les suiveurs et risque de collision.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Deux utilités des feux de recul ?"><template>Éclairer la zone de recul la nuit et avertir les autres de la manœuvre.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Un défaut d'éclairage de plaque au contrôle technique : contre-visite ?"><template>Oui.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Utilité des dispositifs réfléchissants ?"><template>Rendre le véhicule visible la nuit.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Risque de rouler avec des balais d'essuie-glace défectueux ?"><template>Mauvaise visibilité par intempéries.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Danger de compléter le liquide moteur chaud ?"><template>Risque de brûlure.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Risque principal d'un manque d'huile moteur ?"><template>Détérioration ou casse du moteur.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Solution en cas de panne de batterie sans déplacer le véhicule ?"><template>Brancher une 2e batterie en parallèle (+ sur +, − sur −) ou la remplacer.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Qu'est-ce que l'aquaplanage et sa conséquence ?"><template>Un film d'eau entre le pneu et la chaussée, pouvant faire perdre le contrôle.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Conséquence d'un lave-glace défaillant ?"><template>Mauvaise visibilité, pare-brise impossible à nettoyer.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Utilise-t-on le triangle sur autoroute ?"><template>Non.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Charge lourde dans le coffre : précautions pneus et feux ?"><template>Augmenter la pression des pneus et régler la hauteur des feux avant.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Risques de rouler avec des objets sur la plage arrière ?"><template>Mauvaise visibilité arrière et projection en cas de freinage ou choc.</template></div>
+<div class="cd" data-c="qser" data-l="Sécurité Routière" data-q="Conséquences d'une panne de feu de position arrière ?"><template>Être mal vu et risque de collision.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Comment et pourquoi protéger une zone de danger après un accident ?"><template>En délimitant clairement et largement la zone, de façon visible, pour protéger les victimes et éviter un sur-accident.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Quels comportements en cas de signal d'alerte du SAIP ?"><template>Se mettre en sécurité, s'informer via les médias et sites officiels, respecter les consignes des autorités.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Comment est composé le signal d'alerte du SAIP (sirènes) ?"><template>Deux codes : le Signal National d'Alerte (3 cycles successifs) et le signal de fin d'alerte (son continu).</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Sur autoroute, comment indiquer le lieu d'un accident au téléphone ?"><template>Numéro de l'autoroute, sens de circulation et point kilométrique.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Comment vérifier la respiration d'une victime ?"><template>Regarder si le ventre et la poitrine se soulèvent, et sentir l'air à l'expiration.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Qu'est-ce qu'une perte de connaissance ?"><template>La victime ne répond pas et ne réagit pas, mais respire.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Où déplacer une victime en cas de dégagement d'urgence ?"><template>Dans un endroit suffisamment éloigné du danger et de ses conséquences.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Quel équipement porter avant de quitter le véhicule (panne/accident) ?"><template>Le gilet de haute visibilité, avant de sortir.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Pourquoi l'alerte aux secours doit-elle être rapide et précise ?"><template>Pour leur permettre d'apporter les moyens adaptés dans le délai le plus court.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Quels sont les numéros d'urgence ?"><template>18 (pompiers), 15 (SAMU), 112 (urgence européen).</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Que faire face à une victime qui ne répond pas mais respire ?"><template>La placer en PLS, alerter les secours, surveiller la respiration jusqu'à leur arrivée.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Comment arrêter une hémorragie ?"><template>Appuyer fortement sur la plaie avec les doigts ou la paume, en posant un tissu propre.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Hors autoroute, où placer le triangle de pré-signalisation ?"><template>À environ 30 m, ou avant un virage ou un sommet de côte.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Conditions pour un dégagement d'urgence (danger réel, immédiat, non contrôlable) ?"><template>La victime doit être visible, facile à atteindre, rien ne doit gêner. Être sûr de pouvoir le réaliser.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Trois informations à transmettre aux secours ?"><template>Le numéro d'appel, la nature et la localisation précise du problème.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Que faire face à une victime en arrêt cardiaque ?"><template>Alerter les secours, masser (réanimation cardio-pulmonaire), défibriller avec un DAE si possible.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Quand mettre une victime en PLS ?"><template>Si elle ne répond pas, ne réagit pas, mais respire.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Quand peut-on déplacer une victime ?"><template>Face à un danger réel, immédiat, non contrôlable. Cela doit rester exceptionnel.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Pourquoi attendre l'autorisation du correspondant pour raccrocher ?"><template>Car il peut nous guider sur les gestes à faire ou ne pas faire jusqu'à l'arrivée des secours.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Quand mettre fin à un appel avec les secours ?"><template>Seulement quand le correspondant nous y invite.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Par quels moyens donner l'alerte aux secours ?"><template>Téléphone portable, ou à défaut téléphone fixe ou borne d'appel d'urgence.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Pourquoi masser immédiatement une victime en arrêt cardiaque ?"><template>Car les lésions du cerveau surviennent dès les premières minutes.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Risques pour une personne inconsciente allongée sur le dos ?"><template>Arrêt respiratoire et arrêt cardiaque.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Pourquoi ne pas laisser une personne inconsciente sur le dos ?"><template>Risque d'étouffement par des liquides dans la gorge ou la chute de la langue en arrière.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Un DAE sur une victime pas en arrêt cardiaque : risque ?"><template>Non, il ne se déclenche que si la victime est en arrêt cardiaque.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Qu'est-ce qu'un arrêt cardiaque ?"><template>Le cœur ne fonctionne plus ou fonctionne de façon anarchique.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Signes d'un arrêt cardiaque ?"><template>La victime ne répond pas, ne réagit pas, et ne respire pas ou respire anormalement.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Risque principal d'un arrêt cardiaque sans secours ?"><template>La mort en quelques minutes.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Qu'est-ce qu'un défibrillateur automatisé externe (DAE) ?"><template>Un appareil qui peut rétablir une activité cardiaque normale chez une victime en arrêt cardiaque.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Qu'est-ce qu'une hémorragie ?"><template>Une perte de sang prolongée qui ne s'arrête pas (imbibe un mouchoir en quelques secondes).</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Risques pour une victime d'hémorragie ?"><template>Une détresse circulatoire ou un arrêt cardiaque.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Trois manières d'évaluer l'état de conscience d'une victime ?"><template>Lui poser des questions simples, lui secouer doucement les épaules, lui demander un geste simple.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Objectif du SAIP ?"><template>Avertir la population d'un danger imminent ou d'un événement grave en cours.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="Comment est diffusée l'alerte du SAIP ?"><template>Par les sirènes, les médias (Radio France, France Télévisions) et l'application SAIP.</template></div>
+<div class="cd" data-c="sec" data-l="Premiers Secours" data-q="À partir de quel âge peut-on se former aux premiers secours ?"><template>10 ans.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Tourner à DROITE en carrefour : quelle trajectoire ?"><template>Rester serré à droite tout le virage, ne jamais couper large. Vérifier l'angle mort droit avant.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Tourner à GAUCHE en T : erreur de boîte à éviter ?"><template>Ne pas repasser en 1ère pendant le virage. Rester en 2ème si la vitesse le permet.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Avant de tourner : ordre des 3 actions ?"><template>1. Rétro + angle mort du côté. 2. Clignotant. 3. Serrage vers le côté. Toujours dans cet ordre.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Tu oublies le clignotant avant de tourner : quel déclencheur ?"><template>Dès que tu vois l'intersection : œil rétro → main clignotant. Un réflexe visuel, pas de dernière seconde.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Entrer dans un giratoire : comment lire les sorties ?"><template>Lire le panneau avant d'entrer, compter les sorties. Clignotant gauche si tu dépasses la 1ère, droit avant ta sortie.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Giratoire : tu rates ta direction, quelle règle ?"><template>Pas de frein brusque, jamais reculer. Tu refais un tour complet et tu ressors au prochain passage.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Giratoire : comment éviter de prendre la mauvaise sortie ?"><template>Lire le panneau avant d'entrer, te répéter la sortie, clignoter à droite une sortie avant.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="'Allure inadaptée' / 'manque de dynamisme' : ça veut dire quoi ?"><template>Tu roules trop lentement sans raison. Sur 80 viser 75-80, en ville 45-50. Hésiter gêne la circulation.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Quand est-il légitime de rouler sous la limite ?"><template>Visibilité réduite, mauvaise météo, zone piétons, file, manœuvre à venir. Pas par simple excès de prudence.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Tu passes de 80 à 50 : que vérifier avant de ralentir ?"><template>Confirmer visuellement le panneau 50 (rond rouge). En cas de doute, relire avant de ralentir.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Céder le passage sans visibilité : bonne méthode ?"><template>S'arrêter si visibilité nulle, avancer lentement pour voir. Ne jamais s'engager sans certitude que c'est libre.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Tu forces alors que tu devrais céder : quel réflexe ?"><template>Lire le panneau avant l'intersection. Si cédez/stop : regarder, confirmer libre, puis partir. Doute = stop.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Tu ralentis alors que tu es prioritaire : pourquoi c'est un souci ?"><template>Ça crée de la confusion : les autres doivent recalculer. Garder son allure = comportement prévisible.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Avant une intersection, même prioritaire : quoi vérifier ?"><template>Passage piéton (piétons engagés) et bande cyclable (vélo à droite/gauche). Avant l'intersection, pas pendant.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Feu vert avec passage piéton : quelle séquence de regard ?"><template>Rétro → piéton gauche → piéton droit → bande cyclable → si libre, passer. Jamais en regardant seulement le feu.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Dépasser un cycliste : contrôles et distance ?"><template>Rétro + angle mort gauche, distance 1 m en ville / 1,5 m hors agglo, rétro + angle mort droit pour se rabattre. Clignotant à chaque fois.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Voie de tourne-à-gauche avec feu : erreur à éviter ?"><template>Ne pas freiner avant d'entrer si la voie est libre. Se positionner, attendre le feu, partir sans forcer.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Feu vert sans rappel après : que faire ?"><template>Ne pas supposer que c'est libre. Revérifier piétons et intersection avant de traverser.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Grand carrefour commercial (type Leclerc) : le piège ?"><template>Sorties multiples, piétons, livreurs. Vitesse basse, regard sur les côtés, priorité aux piétons. Ne pas fixer que le feu.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Parking école en épi : précautions ?"><template>Vitesse au pas, priorité absolue aux piétons (enfants), angle mort avant chaque mouvement, feux de recul.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Intervention DLS : ça veut dire quoi et quoi en tirer ?"><template>Intervention de la monitrice : tu allais faire une erreur grave. Analyser : priorité ratée, angle mort ou vitesse ?</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Les 5 automatismes prioritaires de ton examen blanc ?"><template>1. Clignotant avant toute manœuvre. 2. Piétons et cyclistes avant chaque intersection. 3. Lire le giratoire avant d'entrer. 4. Pas de 1ère dans les virages lents. 5. Garder l'allure quand tu es prioritaire.</template></div>
+<div class="cd" data-c="pf" data-l="Points Faibles" data-q="Le scan visuel complet avant chaque intersection ?"><template>Rétro → miroir droit → miroir gauche → angle mort → piéton gauche → piéton droit → bande cyclable → priorité → agir.</template></div>
+</div>
+
+<script src="script.js"></script>
+<div id="celebrate" class="celebrate">
+  <div class="celebrate-box">
+    <div class="celebrate-title">OBJECTIF<br>ATTEINT !</div>
+    <div class="celebrate-sub">20 cartes aujourd'hui — continue comme ça !</div>
+  </div>
+</div>
+</body>
+</html>
