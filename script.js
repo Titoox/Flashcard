@@ -85,7 +85,7 @@ function soundWin(){beep(660,.1);setTimeout(function(){beep(880,.1);},100);setTi
 
 /* ---------- 5. Construction du paquet ---------- */
 function buildDeck(){
-  if(filter==='all'){deck=ALL.slice();}
+  if(filter==='all'){deck=ALL.filter(function(c){return scores[c.id]!=='k';});}
   else if(filter==='k'){deck=ALL.filter(function(c){return scores[c.id]==='k';});}
   else if(filter==='u'){deck=ALL.filter(function(c){return scores[c.id]==='u';});}
   else if(filter==='n'){deck=ALL.filter(function(c){return scores[c.id]==='n';});}
@@ -237,7 +237,8 @@ function mark(s){
   }
 
   // Modes flip / écriture : retirer la carte du deck si elle ne correspond plus au filtre.
-  var sortDuFiltre=(filter==='k'&&s!=='k')||(filter==='u'&&s!=='u')||(filter==='n'&&s!=='n');
+  var sortDuFiltre=(filter==='k'&&s!=='k')||(filter==='u'&&s!=='u')||(filter==='n'&&s!=='n')
+    ||(filter==='all'&&s==='k');
   stats();updateGameBar();
   if(sortDuFiltre){buildDeck();return;}
   if(idx<deck.length-1){idx++;fl=false;render();}
