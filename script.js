@@ -104,7 +104,24 @@ function buildDeck(){
   }
 
   idx = 0; fl = false;
-  render(); stats();
+  render(); stats(); updateSubFilterCounts();
+}
+
+function updateSubFilterCounts(){
+  var catCards = filterCat === 'all'
+    ? ALL.slice()
+    : ALL.filter(function(c){ return c.c === filterCat; });
+  var counts = {
+    'null': catCards.filter(function(c){ return scores[c.id] === undefined; }).length,
+    k: catCards.filter(function(c){ return scores[c.id] === 'k'; }).length,
+    u: catCards.filter(function(c){ return scores[c.id] === 'u'; }).length,
+    n: catCards.filter(function(c){ return scores[c.id] === 'n'; }).length
+  };
+  var labels = {'null':'Non triées', k:'Sues', u:'Incertants', n:'À revoir'};
+  document.querySelectorAll('.sfbtn').forEach(function(b){
+    var key = b.dataset.score;
+    b.textContent = labels[key] + ' (' + (counts[key] || 0) + ')';
+  });
 }
 
 /* ---------- 6. Messages de deck vide ---------- */
@@ -167,9 +184,6 @@ function filtCat(cat){
   document.querySelectorAll('.fbtn[data-cat]').forEach(function(b){
     b.classList.toggle('on', b.dataset.cat === cat);
   });
-
-  var sf = document.getElementById('score-filters');
-  if(sf) sf.style.display = cat === 'all' ? 'none' : '';
 
   document.querySelectorAll('.sfbtn').forEach(function(b){ b.classList.remove('on'); });
   var defBtn = document.querySelector('.sfbtn[data-score="null"]');
@@ -326,8 +340,6 @@ var sb = document.getElementById('sound-btn'); if(sb) sb.textContent = game.soun
 document.querySelectorAll('.fbtn[data-cat]').forEach(function(b){
   b.classList.toggle('on', b.dataset.cat === filterCat);
 });
-var sf = document.getElementById('score-filters');
-if(sf) sf.style.display = filterCat === 'all' ? 'none' : '';
 document.querySelectorAll('.sfbtn').forEach(function(b){
   var bScore = b.dataset.score === 'null' ? null : b.dataset.score;
   b.classList.toggle('on', bScore === filterScore);
