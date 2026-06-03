@@ -1,3 +1,194 @@
+# Refonte Filtres + Simplification Modes — Plan d'implémentation
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Remplacer le système de filtre unique par un système catégorie + sous-filtre score, supprimer tous les modes sauf Lecture (flip), optimiser pour usage mobile iPhone.
+
+**Architecture:** Deux variables d'état `filterCat` et `filterScore` remplacent l'ancienne variable `filter`. HTML restructuré avec une rangée catégorie + une rangée score conditionnelle. Les trois fichiers (HTML, CSS, JS) peuvent être modifiés en parallèle car l'interface entre eux est définie ci-dessous.
+
+**Tech Stack:** HTML/CSS/JS vanilla, localStorage, Web Audio API
+
+---
+
+## Contrat d'interface (lire avant chaque tâche)
+
+IDs HTML que le JS utilise :
+
+| ID | Rôle |
+|----|------|
+| `stot`, `sok`, `sunsure`, `snok`, `pbar` | Stats bar |
+| `gamebar` | Bandeau série/record/jour |
+| `cnum` | "Carte X / Y" |
+| `scene`, `inner`, `ftag`, `fbody`, `qtext`, `atext` | Flip card |
+| `flip-nav`, `bprev`, `bnext` | Navigation |
+| `score` | Boutons Je sais / Incertain / À revoir |
+| `score-filters` | Rangée sous-filtres score (cachée si cat='all') |
+| `empty-msg` | Message deck vide |
+| `sound-btn` | Bouton son |
+| `import-file` | Input file import |
+| `celebrate` | Overlay célébration |
+| `data` | Div cachée contenant les cartes |
+
+Classes HTML que le JS cible :
+
+| Classe | Rôle |
+|--------|------|
+| `.fbtn[data-cat]` | Boutons catégorie |
+| `.sfbtn[data-score]` | Sous-boutons score |
+| `.on` | Bouton actif |
+
+---
+
+## Task 1 : HTML — Restructurer index.html
+
+**Files:**
+- Modify: `index.html`
+
+> Objectif : supprimer la modebar, restructurer les filtres (data-f → data-cat), ajouter la rangée de sous-filtres score, supprimer write-area/write-nav, déplacer les boutons d'action.
+
+- [ ] **Étape 1 : Supprimer la modebar entière**
+
+Supprimer le bloc `<div class="modebar">...</div>` (lignes contenant tab-flip, tab-write, tab-chrono, tab-hearts, sound-btn).
+Le bouton Son sera déplacé dans la zone actions.
+
+- [ ] **Étape 2 : Remplacer la rangée filters**
+
+Remplacer le bloc `<div class="filters">` existant par :
+
+```html
+<div class="filters">
+  <span class="flabel">Catégorie :</span>
+  <button class="fbtn on" data-cat="all" onclick="filtCat('all')">Toutes</button>
+  <button class="fbtn voiture" data-cat="voiture" onclick="filtCat('voiture')">Voiture</button>
+  <button class="fbtn ve" data-cat="ve" onclick="filtCat('ve')">VE</button>
+  <button class="fbtn qser" data-cat="qser" onclick="filtCat('qser')">Sécurité</button>
+  <button class="fbtn sec" data-cat="sec" onclick="filtCat('sec')">Secours</button>
+  <button class="fbtn pf" data-cat="pf" onclick="filtCat('pf')">Points faibles</button>
+</div>
+<div class="score-filters" id="score-filters" style="display:none">
+  <span class="flabel">Score :</span>
+  <button class="sfbtn on" data-score="null" onclick="filtScore(null)">Non triées</button>
+  <button class="sfbtn k-score" data-score="k" onclick="filtScore('k')">Sues</button>
+  <button class="sfbtn u-score" data-score="u" onclick="filtScore('u')">Incertants</button>
+  <button class="sfbtn n-score" data-score="n" onclick="filtScore('n')">À revoir</button>
+</div>
+<div class="actions">
+  <button class="abtn" onclick="shuffle()">Mélanger</button>
+  <button class="abtn" onclick="exportProgress()">Exporter</button>
+  <button class="abtn" onclick="document.getElementById('import-file').click()">Importer</button>
+  <input type="file" id="import-file" accept="application/json,.json" style="display:none" onchange="importProgress(event)">
+  <button class="abtn del" onclick="confirmReset()">Réinit.</button>
+  <button class="abtn" id="sound-btn" onclick="toggleSound()">Son ON</button>
+</div>
+```
+
+- [ ] **Étape 3 : Supprimer write-area et write-nav**
+
+Supprimer les blocs :
+- `<div id="write-area">...</div>`
+- `<div class="nav" id="write-nav" ...>...</div>`
+
+Garder uniquement `#scene`, `#flip-nav`, `#score`, `#empty-msg`.
+
+- [ ] **Étape 4 : Garder #data intact**
+
+Ne pas toucher au bloc `<div id="data" style="display:none">` — il contient les 216 cartes.
+
+- [ ] **Étape 5 : S'assurer que le header est propre**
+
+```html
+<header>
+  <h1>Permis — Flashcards</h1>
+  <p>Voiture &middot; Vérifications &middot; Sécurité &middot; Secours &middot; Points faibles</p>
+</header>
+```
+
+---
+
+## Task 2 : CSS — Mettre à jour style.css
+
+**Files:**
+- Modify: `style.css`
+
+> Objectif : supprimer les styles des modes supprimés (modetab, write-area, chrono, hearts), ajouter les styles pour .score-filters, .sfbtn, .actions.
+
+- [ ] **Étape 1 : Supprimer les blocs CSS liés aux modes supprimés**
+
+Supprimer tous les blocs qui contiennent ces sélecteurs (chercher et supprimer) :
+- `.modetab`
+- `.modebar`
+- `#write-area`
+- `.write-question`, `.write-qtag`, `.write-qtext`
+- `.write-input-area`, `.write-textarea`, `.write-actions`, `.wbtn`
+- `.write-answer`, `.write-answer-label`, `.write-answer-text`
+- `.write-selfmark`, `.write-selfmark-label`
+- `.gb-live` (gamebar chrono/hearts)
+- `flashWriteG`, `flashWriteB`, `@keyframes flashWriteG`, `@keyframes flashWriteB`
+- `.k-score.on`, `.u-score.on`, `.n-score.on` (anciens styles de score-filter boutons — seront remplacés)
+
+- [ ] **Étape 2 : Déplacer les boutons actions dans une div propre**
+
+Ajouter ce bloc CSS pour la nouvelle zone d'actions :
+
+```css
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 12px;
+}
+```
+
+- [ ] **Étape 3 : Ajouter les styles pour .score-filters**
+
+```css
+.score-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(0,0,0,.04);
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+
+.sfbtn {
+  padding: 5px 12px;
+  border: 2px solid rgba(0,0,0,.15);
+  border-radius: 20px;
+  background: #fff;
+  cursor: pointer;
+  font-size: .82rem;
+  font-weight: 600;
+  transition: background .15s, border-color .15s;
+}
+.sfbtn.on { border-color: transparent; color: #fff; }
+.sfbtn[data-score="null"].on { background: #555; }
+.sfbtn.k-score.on { background: #5fb04a; }
+.sfbtn.u-score.on { background: #d99a2b; }
+.sfbtn.n-score.on { background: #c8472e; }
+```
+
+- [ ] **Étape 4 : Vérifier que les styles flip card sont intacts**
+
+S'assurer que ces blocs existent toujours dans le CSS :
+- `.scene`, `.inner`, `.face`, `.front`, `.back`
+- `.scene.flip .inner`
+- `@keyframes flashG`, `@keyframes flashB` (flash sur #scene)
+- `.score`, `.score.show`, `.sbtn`
+
+---
+
+## Task 3 : JS — Réécrire script.js
+
+**Files:**
+- Modify: `script.js`
+
+> Objectif : réécrire script.js en entier. Supprimer tout le code des modes Écriture/Chrono/Cœurs. Introduire filterCat + filterScore. Nouveau buildDeck(). Nouveau système de filtres.
+
+- [ ] **Étape 1 : Remplacer script.js par le contenu suivant**
+
+```javascript
 /* =========================================================
    Permis — Flashcards (mode Lecture uniquement)
    ========================================================= */
@@ -335,3 +526,91 @@ document.querySelectorAll('.sfbtn').forEach(function(b){
 
 buildDeck();
 updateGameBar();
+```
+
+- [ ] **Étape 2 : Vérifier que #data est toujours présent dans index.html**
+
+Le JS lit `document.getElementById('data').querySelectorAll('.cd')` au démarrage.
+Si cette div est absente ou vide, ALL restera [] et l'appli sera vide.
+
+---
+
+## Task 4 : Vérification point par point
+
+**Files:**
+- Read: `index.html`, `script.js`, `style.css`
+
+> Objectif : vérifier que les 3 fichiers sont cohérents et que chaque point du design est correctement implémenté.
+
+### Checklist de vérification
+
+- [ ] **V1 — Modes supprimés**
+  - Vérifier dans index.html : aucun `class="modetab"`, aucun `id="tab-flip"`, `id="tab-write"`, `id="tab-chrono"`, `id="tab-hearts"`
+  - Vérifier dans script.js : aucune fonction `setMode`, `startChrono`, `stopChrono`, `endChrono`, `endHearts`, `revealAnswer`, `advanceGame`
+  - Vérifier dans style.css : aucun sélecteur `.modetab`, `.modebar`
+
+- [ ] **V2 — Filtres catégorie**
+  - Vérifier dans index.html : 6 boutons `.fbtn` avec `data-cat` = all, voiture, ve, qser, sec, pf
+  - Vérifier dans script.js : fonction `filtCat(cat)` existe, met à jour `.fbtn[data-cat].on`, cache/montre `#score-filters`
+  - Vérifier dans script.js : `loadFilter()` lit `permis_filter_cat_v1` et `permis_filter_score_v1`
+
+- [ ] **V3 — Sous-filtres score**
+  - Vérifier dans index.html : div `#score-filters` avec 4 boutons `.sfbtn` ayant `data-score` = null, k, u, n
+  - Vérifier dans script.js : fonction `filtScore(score)` existe, met à jour `.sfbtn.on`
+  - Vérifier que `#score-filters` a `style="display:none"` par défaut dans le HTML
+
+- [ ] **V4 — buildDeck() logique**
+  - Cas 1 : filterCat='all', filterScore=null → deck = cartes sans score (scores[c.id] === undefined)
+  - Cas 2 : filterCat='voiture', filterScore=null → deck = cartes voiture sans score
+  - Cas 3 : filterCat='voiture', filterScore='n' → deck = cartes voiture avec score 'n'
+  - Vérifier que "sans score" signifie `scores[c.id] === undefined` (pas null, pas '')
+
+- [ ] **V5 — Carte quitte le deck après notation**
+  - Dans `mark()` : vérifier que `buildDeck()` est appelé à la fin (après saveLocal, stats, updateGameBar)
+  - Pas de logique `sortDuFiltre` complexe — juste `buildDeck()` systématiquement
+
+- [ ] **V6 — Messages vides corrects**
+  - filterCat='all' → "Toutes les cartes sont triées ! Choisis une catégorie pour retravailler."
+  - filterCat='voiture', filterScore=null → "Bravo, toutes les cartes Voiture / Commandes sont triées ! Choisis Sues, Incertants ou À revoir pour retravailler."
+  - filterCat='voiture', filterScore='n' → "Aucune carte à revoir dans Voiture / Commandes."
+
+- [ ] **V7 — Re-scoring**
+  - Dans un filtre score (ex : filterScore='n'), les boutons Je sais / Incertain / À revoir sont toujours visibles après flip
+  - Vérifier que `mark()` ne bloque pas selon filterScore (pas de condition `if(filterScore !== null) return`)
+
+- [ ] **V8 — Gamification intacte**
+  - Vérifier dans index.html : `#gamebar`, `#stot`, `#sok`, `#sunsure`, `#snok`, `#pbar` présents
+  - Vérifier dans script.js : `updateGameBar()` écrit Série + Record + Jour
+  - Vérifier : `celebrate()` appelée quand `game.done === game.goal`
+
+- [ ] **V9 — Export / Import / Son**
+  - Vérifier dans index.html : bouton Son avec `id="sound-btn"`, input `id="import-file"`
+  - Vérifier dans script.js : fonctions `exportProgress`, `importProgress`, `toggleSound` présentes
+
+- [ ] **V10 — Cohérence CSS / HTML**
+  - Vérifier que `.sfbtn`, `.sfbtn.k-score.on`, `.sfbtn.u-score.on`, `.sfbtn.n-score.on` existent dans style.css
+  - Vérifier que `.score-filters` a des styles (padding, flex, etc.)
+  - Vérifier que les styles de flip card (`.scene`, `.scene.flip`, `.face`) sont toujours présents
+
+- [ ] **V11 — Démarrage (restore state)**
+  - Vérifier dans script.js section démarrage : `.fbtn[data-cat]` mis à jour selon filterCat chargé
+  - Vérifier : `#score-filters` caché si filterCat='all', visible sinon
+  - Vérifier : `.sfbtn` mis à jour selon filterScore chargé
+
+- [ ] **V12 — Rapport final**
+  - Lister tous les points conformes ✅
+  - Lister tous les points non conformes ❌ avec description précise du problème
+  - Si des problèmes sont trouvés : les corriger directement dans les fichiers
+
+---
+
+## Ordre d'exécution recommandé pour agents parallèles
+
+```
+Agent 1 (HTML)  ──┐
+Agent 2 (CSS)   ──┤──> Agent 4 (Vérification) ──> git push
+Agent 3 (JS)    ──┘
+```
+
+Tasks 1, 2, 3 peuvent être lancées en parallèle.
+Task 4 doit attendre que les 3 autres soient terminées.

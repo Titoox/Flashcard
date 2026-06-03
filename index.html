@@ -19,31 +19,29 @@
   <div id="pbar-wrap"><div id="pbar"></div></div>
 </div>
 <div id="gamebar" class="gamebar"></div>
-<div class="modebar">
-  <span class="modebar-label">Mode :</span>
-  <button class="modetab on" id="tab-flip" onclick="setMode('flip')">Lecture</button>
-  <button class="modetab" id="tab-write" onclick="setMode('write')">Écriture</button>
-  <button class="modetab" id="tab-chrono" onclick="setMode('chrono')">Chrono</button>
-  <button class="modetab" id="tab-hearts" onclick="setMode('hearts')">Cœurs</button>
-  <button class="modetab" id="sound-btn" onclick="toggleSound()" style="margin-left:auto">Son ON</button>
-</div>
 <div class="filters">
-  <span class="flabel">Filtrer :</span>
-  <button class="fbtn on" data-f="all" onclick="filt('all')">Toutes</button>
-  <button class="fbtn k-score" data-f="k" onclick="filt('k')">Sues</button>
-  <button class="fbtn u-score" data-f="u" onclick="filt('u')">Incertains</button>
-  <button class="fbtn n-score" data-f="n" onclick="filt('n')">À revoir</button>
-  <button class="fbtn voiture" data-f="voiture" onclick="filt('voiture')">Voiture</button>
-  <button class="fbtn ve" data-f="ve" onclick="filt('ve')">VE</button>
-  <button class="fbtn qser" data-f="qser" onclick="filt('qser')">Sécurité</button>
-  <button class="fbtn sec" data-f="sec" onclick="filt('sec')">Secours</button>
-  <button class="fbtn pf" data-f="pf" onclick="filt('pf')">Points faibles</button>
-  <div class="gap"></div>
+  <span class="flabel">Catégorie :</span>
+  <button class="fbtn all on" data-cat="all" onclick="filtCat('all')">Toutes</button>
+  <button class="fbtn voiture" data-cat="voiture" onclick="filtCat('voiture')">Voiture</button>
+  <button class="fbtn ve" data-cat="ve" onclick="filtCat('ve')">VE</button>
+  <button class="fbtn qser" data-cat="qser" onclick="filtCat('qser')">Sécurité</button>
+  <button class="fbtn sec" data-cat="sec" onclick="filtCat('sec')">Secours</button>
+  <button class="fbtn pf" data-cat="pf" onclick="filtCat('pf')">Points faibles</button>
+</div>
+<div class="score-filters" id="score-filters" style="display:none">
+  <span class="flabel">Score :</span>
+  <button class="sfbtn on" data-score="null" onclick="filtScore(null)">Non triées</button>
+  <button class="sfbtn k-score" data-score="k" onclick="filtScore('k')">Sues</button>
+  <button class="sfbtn u-score" data-score="u" onclick="filtScore('u')">Incertants</button>
+  <button class="sfbtn n-score" data-score="n" onclick="filtScore('n')">À revoir</button>
+</div>
+<div class="actions">
   <button class="abtn" onclick="shuffle()">Mélanger</button>
   <button class="abtn" onclick="exportProgress()">Exporter</button>
   <button class="abtn" onclick="document.getElementById('import-file').click()">Importer</button>
   <input type="file" id="import-file" accept="application/json,.json" style="display:none" onchange="importProgress(event)">
   <button class="abtn del" onclick="confirmReset()">Réinit.</button>
+  <button class="abtn" id="sound-btn" onclick="toggleSound()">Son ON</button>
 </div>
 <div class="leg">
   <span><i class="dot voiture"></i>Voiture / Commandes</span>
@@ -76,34 +74,6 @@
     <button class="sbtn k" onclick="mark('k')">Je sais</button>
     <button class="sbtn u" onclick="mark('u')">Incertain</button>
     <button class="sbtn n" onclick="mark('n')">A revoir</button>
-  </div>
-  <div id="write-area">
-    <div class="write-question" id="w-question">
-      <div class="write-qtag" id="w-tag"></div>
-      <div class="write-qtext" id="w-qtext"></div>
-    </div>
-    <div class="write-input-area">
-      <label>Ta réponse — où c'est, comment faire :</label>
-      <textarea class="write-textarea" id="w-input" placeholder="Décris l'emplacement, les gestes, le pourquoi..."></textarea>
-      <div class="write-actions">
-        <button class="wbtn reveal" onclick="revealAnswer()">Voir la réponse</button>
-        <button class="wbtn skip" onclick="next()">Passer</button>
-      </div>
-    </div>
-    <div class="write-answer" id="w-answer">
-      <div class="write-answer-label">Réponse correcte</div>
-      <div class="write-answer-text" id="w-atext"></div>
-      <div class="write-selfmark" id="w-selfmark">
-        <div class="write-selfmark-label">Tu t'étais bien évalué ?</div>
-        <button class="sbtn k" onclick="mark('k')">Oui, je savais</button>
-        <button class="sbtn u" onclick="mark('u')">À moitié</button>
-        <button class="sbtn n" onclick="mark('n')">Non, à retravailler</button>
-      </div>
-    </div>
-  </div>
-  <div class="nav" id="write-nav" style="display:none">
-    <button class="nbtn" id="w-bprev" onclick="prev()" disabled>&#8592;</button>
-    <button class="nbtn primary" id="w-bnext" onclick="next()">Suivante &#8594;</button>
   </div>
   <div class="empty-msg" id="empty-msg" style="display:none">Aucune carte « à revoir » pour l'instant. Marque des cartes en « incertain » ou « à revoir » pour les retrouver ici.</div>
 </main>
